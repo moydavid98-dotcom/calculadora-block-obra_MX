@@ -5,9 +5,9 @@ from io import BytesIO
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 
-# --------------------------------------------------
+# ==================================================
 # CONFIGURACIÓN
-# --------------------------------------------------
+# ==================================================
 st.set_page_config(
     page_title="Calculadora de Block – Obra MX",
     page_icon="🧱",
@@ -18,9 +18,9 @@ st.set_page_config(
 st.title("🧱 CALCULADORA DE BLOCK – OBRA (MX)")
 st.caption("Cálculo conforme a práctica común de obra en México")
 
-# --------------------------------------------------
+# ==================================================
 # DATOS DEL BLOCK
-# --------------------------------------------------
+# ==================================================
 st.subheader("DATOS DEL BLOCK")
 
 tipo_block = st.selectbox(
@@ -46,9 +46,9 @@ with c2:
 ab = st.number_input("Espesor (cm)", value=ab)
 junta = st.number_input("Junta (cm)", value=1.0)
 
-# --------------------------------------------------
+# ==================================================
 # MURO
-# --------------------------------------------------
+# ==================================================
 st.subheader("MURO")
 
 metodo = st.radio(
@@ -70,9 +70,9 @@ else:
 
 desperdicio = st.number_input("Desperdicio (%)", value=5.0)
 
-# --------------------------------------------------
-# ADITIVO A EMPLEAR
-# --------------------------------------------------
+# ==================================================
+# ADITIVO
+# ==================================================
 st.subheader("ADITIVO A EMPLEAR")
 
 aditivo = st.radio(
@@ -100,9 +100,9 @@ else:
         p3 = st.number_input("Arena", value=4.0)
     total_partes = p1 + p2 + p3
 
-# --------------------------------------------------
-# COSTOS UNITARIOS
-# --------------------------------------------------
+# ==================================================
+# COSTOS
+# ==================================================
 st.subheader("COSTOS UNITARIOS")
 
 costo_block = st.number_input("Block ($/pza)", value=18.0)
@@ -110,9 +110,9 @@ costo_mortero = st.number_input("Mortero 25 kg ($)", value=190.0)
 costo_cemento = st.number_input("Cemento 50 kg ($)", value=230.0)
 costo_arena = st.number_input("Arena ($/m³)", value=450.0)
 
-# --------------------------------------------------
-# FUNCIÓN PDF
-# --------------------------------------------------
+# ==================================================
+# FUNCIÓN PDF (ULTRA SEGURA)
+# ==================================================
 def generar_pdf_reporte(d):
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=letter)
@@ -129,48 +129,51 @@ def generar_pdf_reporte(d):
     y -= 30
 
     linea(f"Fecha: {d['fecha']}")
-    y -= 15
+    y -= 10
 
     linea(f"DATOS DEL ({d['tipo_block']})", True)
     linea(f"- Dimensiones: {d['dimensiones']} cm")
     linea(f"- Junta: {d['junta']} cm")
-    y -= 10
+    y -= 8
 
     linea("MURO", True)
     linea(f"- Área del muro: {d['area_muro']} m²")
     linea(f"- Desperdicio: {d['desperdicio']} %")
-    y -= 10
+    y -= 8
 
     linea("RESULTADOS", True)
     linea(f"- Blocks netos: {d['blocks_netos']} pzas")
     linea(f"- Blocks con desperdicio: {d['blocks_totales']} pzas")
+
     if d["mortero_bultos"] > 0:
         linea(f"- Mortero (25 kg): {d['mortero_bultos']} bultos")
     if d["cemento_bultos"] > 0:
         linea(f"- Cemento (50 kg): {d['cemento_bultos']} bultos")
     if d["arena_m3"] > 0:
-        linea(f"- Arena: {d['arena_m3']} m³")
-    y -= 10
+        linea(f"- Arena: {d['arena_m3']:.2f} m³")
+
+    y -= 8
 
     linea("COSTOS", True)
-    linea(f"- Blocks (${d['costo_block']} pza): ${d['costo_blocks']}")
+    linea(f"- Blocks (${d['costo_block']:.2f} pza): ${d['costo_blocks']:,.0f}")
     if d["mortero_bultos"] > 0:
-        linea(f"- Mortero (${d['costo_mortero']}): ${d['costo_mortero_total']}")
+        linea(f"- Mortero (${d['costo_mortero']:.2f}): ${d['costo_mortero_total']:,.0f}")
     if d["cemento_bultos"] > 0:
-        linea(f"- Cemento (${d['costo_cemento']}): ${d['costo_cemento_total']}")
+        linea(f"- Cemento (${d['costo_cemento']:.2f}): ${d['costo_cemento_total']:,.0f}")
     if d["arena_m3"] > 0:
-        linea(f"- Arena (${d['costo_arena']} m³): ${d['costo_arena_total']}")
-    linea(f"- TOTAL: ${d['costo_total']}")
+        linea(f"- Arena (${d['costo_arena']:.2f} m³): ${d['costo_arena_total']:,.0f}")
+    linea(f"- TOTAL: ${d['costo_total']:,.0f}")
+
     y -= 10
 
     linea("PESOS APROXIMADOS", True)
-    linea(f"- Blocks: {d['peso_blocks']} kg")
+    linea(f"- Blocks: {d['peso_blocks']:,.0f} kg")
     if d["mortero_bultos"] > 0:
-        linea(f"- Mortero: {d['peso_mortero']} kg")
+        linea(f"- Mortero: {d['peso_mortero']:,.0f} kg")
     if d["cemento_bultos"] > 0:
-        linea(f"- Cemento: {d['peso_cemento']} kg")
+        linea(f"- Cemento: {d['peso_cemento']:,.0f} kg")
     if d["arena_m3"] > 0:
-        linea(f"- Arena: {d['peso_arena']} kg")
+        linea(f"- Arena: {d['peso_arena']:,.0f} kg")
 
     y -= 20
     c.setFont("Helvetica-Oblique", 8)
@@ -185,9 +188,9 @@ def generar_pdf_reporte(d):
     buffer.seek(0)
     return buffer
 
-# --------------------------------------------------
+# ==================================================
 # CÁLCULO
-# --------------------------------------------------
+# ==================================================
 if st.button("🧮 CALCULAR", use_container_width=True):
 
     largo_mod = lb + junta
@@ -201,8 +204,9 @@ if st.button("🧮 CALCULAR", use_container_width=True):
     volumen_blocks = blocks_netos * volumen_block
     volumen_mezcla = volumen_muro - volumen_blocks
 
-    mortero_bultos = cemento_bultos = 0
-    arena_m3 = 0
+    mortero_bultos = 0
+    cemento_bultos = 0
+    arena_m3 = 0.0
 
     if aditivo == "Mortero":
         vol_m = (p1 / total_partes) * volumen_mezcla
@@ -235,30 +239,30 @@ if st.button("🧮 CALCULAR", use_container_width=True):
     st.subheader("RESULTADOS")
     st.write(f"Blocks netos: **{math.ceil(blocks_netos)} pzas**")
     st.write(f"Blocks con desperdicio: **{blocks_totales} pzas**")
-    if mortero_bultos:
+    if mortero_bultos > 0:
         st.write(f"Mortero (25 kg): **{mortero_bultos} bultos**")
-    if cemento_bultos:
+    if cemento_bultos > 0:
         st.write(f"Cemento (50 kg): **{cemento_bultos} bultos**")
-    if arena_m3:
+    if arena_m3 > 0:
         st.write(f"Arena: **{arena_m3:.2f} m³**")
 
     st.subheader("COSTOS")
     st.write(f"Blocks: ${costo_blocks:,.0f}")
-    if mortero_bultos:
+    if mortero_bultos > 0:
         st.write(f"Mortero: ${costo_mort:,.0f}")
-    if cemento_bultos:
+    if cemento_bultos > 0:
         st.write(f"Cemento: ${costo_cem:,.0f}")
-    if arena_m3:
+    if arena_m3 > 0:
         st.write(f"Arena: ${costo_ar:,.0f}")
     st.write(f"**TOTAL: ${costo_total:,.0f}**")
 
     st.subheader("PESOS APROXIMADOS")
     st.write(f"Blocks: {peso_blocks:,.0f} kg")
-    if mortero_bultos:
+    if mortero_bultos > 0:
         st.write(f"Mortero: {peso_mortero:,.0f} kg")
-    if cemento_bultos:
+    if cemento_bultos > 0:
         st.write(f"Cemento: {peso_cemento:,.0f} kg")
-    if arena_m3:
+    if arena_m3 > 0:
         st.write(f"Arena: {peso_arena:,.0f} kg")
 
     datos_pdf = {
@@ -272,20 +276,20 @@ if st.button("🧮 CALCULAR", use_container_width=True):
         "blocks_totales": blocks_totales,
         "mortero_bultos": mortero_bultos,
         "cemento_bultos": cemento_bultos,
-        "arena_m3": f"{arena_m3:.2f}",
-        "costo_block": f"{costo_block:.2f}",
-        "costo_blocks": f"{costo_blocks:,.0f}",
-        "costo_mortero": f"{costo_mortero:.2f}",
-        "costo_mortero_total": f"{costo_mort:,.0f}",
-        "costo_cemento": f"{costo_cemento:.2f}",
-        "costo_cemento_total": f"{costo_cem:,.0f}",
-        "costo_arena": f"{costo_arena:.2f}",
-        "costo_arena_total": f"{costo_ar:,.0f}",
-        "costo_total": f"{costo_total:,.0f}",
-        "peso_blocks": f"{peso_blocks:,.0f}",
-        "peso_mortero": f"{peso_mortero:,.0f}",
-        "peso_cemento": f"{peso_cemento:,.0f}",
-        "peso_arena": f"{peso_arena:,.0f}",
+        "arena_m3": arena_m3,
+        "costo_block": costo_block,
+        "costo_blocks": costo_blocks,
+        "costo_mortero": costo_mortero,
+        "costo_mortero_total": costo_mort,
+        "costo_cemento": costo_cemento,
+        "costo_cemento_total": costo_cem,
+        "costo_arena": costo_arena,
+        "costo_arena_total": costo_ar,
+        "costo_total": costo_total,
+        "peso_blocks": peso_blocks,
+        "peso_mortero": peso_mortero,
+        "peso_cemento": peso_cemento,
+        "peso_arena": peso_arena,
     }
 
     pdf = generar_pdf_reporte(datos_pdf)
