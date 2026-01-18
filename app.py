@@ -1,4 +1,4 @@
-import streamlit as st
+    import streamlit as st
 import math
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
@@ -16,10 +16,10 @@ st.set_page_config(
 )
 
 st.title("🧱 Calculadora de Block y Ladrillo – Obra MX")
-st.caption("Cálculo rápido conforme a práctica común de obra en México")
+st.caption("Cálculo realista de materiales conforme a práctica común en México")
 
 # --------------------------------------------------
-# SELECTOR DE PIEZA
+# TIPO DE PIEZA
 # --------------------------------------------------
 st.subheader("🧱 Tipo de pieza")
 
@@ -28,18 +28,17 @@ tipo_pieza = st.selectbox(
     ["Block 12", "Block 15", "Block 20", "Ladrillo rojo / tabique"]
 )
 
-# Valores típicos MX
 if tipo_pieza == "Block 12":
-    lb, hb, ab, peso_pieza = 40.0, 20.0, 12.0, 12.0
+    lb, hb, ab = 40.0, 20.0, 12.0
 elif tipo_pieza == "Block 15":
-    lb, hb, ab, peso_pieza = 40.0, 20.0, 15.0, 14.0
+    lb, hb, ab = 40.0, 20.0, 15.0
 elif tipo_pieza == "Block 20":
-    lb, hb, ab, peso_pieza = 40.0, 20.0, 20.0, 18.0
-else:  # Ladrillo rojo
-    lb, hb, ab, peso_pieza = 23.0, 5.0, 7.0, 3.0
+    lb, hb, ab = 40.0, 20.0, 20.0
+else:
+    lb, hb, ab = 23.0, 5.0, 7.0
 
 # --------------------------------------------------
-# DIMENSIONES (EDITABLES)
+# DIMENSIONES
 # --------------------------------------------------
 st.subheader("📐 Dimensiones de la pieza")
 
@@ -50,7 +49,6 @@ with c2:
     hb = st.number_input("Alto (cm)", value=hb)
 
 ab = st.number_input("Espesor (cm)", value=ab)
-peso_pieza = st.number_input("Peso unitario (kg)", value=peso_pieza)
 
 # --------------------------------------------------
 # JUNTA Y DESPERDICIO
@@ -87,33 +85,44 @@ else:
     st.metric("Área calculada", f"{area_muro:.2f} m²")
 
 # --------------------------------------------------
-# TIPO DE MORTERO
+# LIGANTE (LENGUAJE DE OBRA)
 # --------------------------------------------------
-st.subheader("🪣 Tipo de mortero")
+st.subheader("🪣 Material para pegar")
 
-tipo_mortero = st.radio(
-    "Selecciona el tipo de mortero",
-    ["Premezclado (bultos 25 kg)", "Hecho en obra (cemento + arena)"]
+tipo_ligante = st.radio(
+    "Selecciona el material",
+    [
+        "Mortero (bultos 25 kg)",
+        "Cemento + arena",
+        "Ambos (mortero + cemento)"
+    ]
 )
 
 # --------------------------------------------------
-# CONFIG MORTERO
+# CONFIGURACIÓN DE MATERIALES
 # --------------------------------------------------
-if tipo_mortero == "Premezclado (bultos 25 kg)":
-    rendimiento_mortero = st.number_input(
-        "Rendimiento por bulto (m³)",
-        value=0.013
-    )
-    costo_mortero_bulto = st.number_input(
-        "Costo por bulto ($)",
-        value=120.0
-    )
-else:
+st.subheader("⚖ Configuración de materiales")
+
+# Arena (siempre editable)
+costo_arena = st.number_input("Costo arena ($/m³)", value=450.0)
+
+# Cemento
+costo_cemento = st.number_input("Costo bulto cemento 50 kg ($)", value=280.0)
+
+# Mortero
+costo_mortero = st.number_input("Costo bulto de mortero 25 kg ($)", value=120.0)
+rendimiento_mortero = st.number_input(
+    "Rendimiento por bulto de mortero (m³)",
+    value=0.013
+)
+
+# Proporciones (si hay cemento)
+if tipo_ligante in ["Cemento + arena", "Ambos (mortero + cemento)"]:
     c1, c2 = st.columns(2)
     with c1:
-        cemento_partes = st.number_input("Cemento (partes)", value=1)
+        cemento_partes = st.number_input("Partes de cemento", value=1)
     with c2:
-        arena_partes = st.number_input("Arena (partes)", value=4)
+        arena_partes = st.number_input("Partes de arena", value=4)
 
 # --------------------------------------------------
 # COSTO DE PIEZA
@@ -135,22 +144,15 @@ def generar_pdf(datos):
         y -= 14
 
     c.setFont("Helvetica-Bold", 14)
-    linea("CALCULADORA DE BLOCK Y LADRILLO – OBRA (MX)")
+    linea("CALCULADORA DE MATERIALES – OBRA (MX)")
     y -= 10
 
     c.setFont("Helvetica", 10)
     linea(f"Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}")
     y -= 15
 
-    linea(f"Pieza: {datos['tipo_pieza']}")
-    linea(f"Área del muro: {datos['area_muro']:.2f} m²")
-    linea(f"Junta: {datos['junta']} cm")
-    linea(f"Desperdicio: {datos['desperdicio']} %")
-    y -= 10
-
-    linea(f"Piezas totales: {datos['piezas']}")
-    linea(f"Mortero: {datos['mortero']}")
-    linea(f"Costo total: ${datos['costo_total']:,.0f}")
+    for k, v in datos.items():
+        linea(f"- {k}: {v}")
 
     y -= 20
     c.setFont("Helvetica-Oblique", 8)
@@ -167,52 +169,73 @@ def generar_pdf(datos):
 st.markdown("---")
 if st.button("🧮 CALCULAR", use_container_width=True):
 
-    # Cálculo de piezas
     largo_mod = lb + junta
     alto_mod = hb + junta
-
     piezas_m2 = 10000 / (largo_mod * alto_mod)
-    piezas_net = piezas_m2 * area_muro
-    piezas_tot = math.ceil(piezas_net * (1 + desperdicio / 100))
+    piezas = math.ceil(piezas_m2 * area_muro * (1 + desperdicio / 100))
 
-    # Volúmenes
     volumen_muro = area_muro * (ab / 100)
     volumen_pieza = (lb * hb * ab) / 1_000_000
-    volumen_piezas = piezas_net * volumen_pieza
-    volumen_mortero = volumen_muro - volumen_piezas
+    volumen_piezas = piezas * volumen_pieza
+    volumen_ligante = volumen_muro - volumen_piezas
 
-    costo_total = piezas_tot * costo_pieza
+    costo_total = piezas * costo_pieza
 
-    st.subheader("🧱 Piezas")
-    st.metric("Cantidad total", piezas_tot)
+    arena_m3 = 0
+    cemento_bultos = 0
+    mortero_bultos = 0
 
-    st.subheader("🪣 Mortero")
+    if tipo_ligante == "Mortero (bultos 25 kg)":
+        mortero_bultos = math.ceil(volumen_ligante / rendimiento_mortero)
+        costo_total += mortero_bultos * costo_mortero
 
-    if tipo_mortero == "Premezclado (bultos 25 kg)":
-        bultos_mortero = math.ceil(volumen_mortero / rendimiento_mortero)
-        costo_mortero = bultos_mortero * costo_mortero_bulto
-        st.metric("Mortero", f"{bultos_mortero} bultos (25 kg)")
-        costo_total += costo_mortero
-        mortero_txt = f"{bultos_mortero} bultos (25 kg)"
-    else:
+    elif tipo_ligante == "Cemento + arena":
         total_partes = cemento_partes + arena_partes
-        vol_cemento = volumen_mortero * (cemento_partes / total_partes)
-        bultos_cemento = math.ceil(vol_cemento / 0.035)
-        st.metric("Cemento", f"{bultos_cemento} bultos")
-        mortero_txt = f"Cemento {bultos_cemento} bultos"
+        vol_cemento = volumen_ligante * (cemento_partes / total_partes)
+        arena_m3 = volumen_ligante * (arena_partes / total_partes)
+        cemento_bultos = math.ceil(vol_cemento / 0.035)
 
-    st.subheader("💰 Costo total")
-    st.metric("Total estimado", f"${costo_total:,.0f}")
+        costo_total += cemento_bultos * costo_cemento
+        costo_total += arena_m3 * costo_arena
+
+    else:  # Ambos
+        mitad = volumen_ligante / 2
+
+        mortero_bultos = math.ceil(mitad / rendimiento_mortero)
+
+        total_partes = cemento_partes + arena_partes
+        vol_cemento = mitad * (cemento_partes / total_partes)
+        arena_m3 = mitad * (arena_partes / total_partes)
+        cemento_bultos = math.ceil(vol_cemento / 0.035)
+
+        costo_total += mortero_bultos * costo_mortero
+        costo_total += cemento_bultos * costo_cemento
+        costo_total += arena_m3 * costo_arena
+
+    # RESULTADOS
+    st.subheader("🧱 Piezas")
+    st.metric("Cantidad total", piezas)
+
+    st.subheader("🪣 Materiales")
+    if mortero_bultos:
+        st.metric("Mortero 25 kg", f"{mortero_bultos} bultos")
+    if cemento_bultos:
+        st.metric("Cemento 50 kg", f"{cemento_bultos} bultos")
+    if arena_m3:
+        st.metric("Arena", f"{arena_m3:.2f} m³")
+
+    st.subheader("💰 Costo total estimado")
+    st.metric("Total", f"${costo_total:,.0f}")
 
     # PDF
     datos_pdf = {
-        "tipo_pieza": tipo_pieza,
-        "area_muro": area_muro,
-        "junta": junta,
-        "desperdicio": desperdicio,
-        "piezas": piezas_tot,
-        "mortero": mortero_txt,
-        "costo_total": costo_total
+        "Pieza": tipo_pieza,
+        "Área del muro (m²)": f"{area_muro:.2f}",
+        "Piezas": piezas,
+        "Mortero (25 kg)": mortero_bultos,
+        "Cemento (50 kg)": cemento_bultos,
+        "Arena (m³)": f"{arena_m3:.2f}",
+        "Costo total": f"${costo_total:,.0f}"
     }
 
     pdf = generar_pdf(datos_pdf)
@@ -220,7 +243,7 @@ if st.button("🧮 CALCULAR", use_container_width=True):
     st.download_button(
         "📄 Exportar PDF",
         pdf,
-        "calculo_block_ladrillo_MX.pdf",
+        "calculo_materiales_obra_MX.pdf",
         "application/pdf",
         use_container_width=True
     )
